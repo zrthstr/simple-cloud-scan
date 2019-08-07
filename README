@@ -1,0 +1,140 @@
+SCS - simple cloud scan - audits your aws
+==============================================================================
+Simple cloud scan finds security relevant information from AWS with as
+little privileges as possible.
+
+
+
+Setup & installation:
+------------------------------------------------------------------------------
+% pip3 install -r requirements.txt
+SCS makes use of .aws/config files.
+https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#shared-credentials-file
+
+
+
+
+Version, License & Author:
+------------------------------------------------------------------------------
+% ./simple_cloud_scan.py version
+
+,--.
+    )                    SCS - SimpleCloudScan - v0.0.1
+  _'-. _                 Copyright (C) 2018 zrth1k@gmail.com
+ (    ) ),--.  
+             )-._        This program may be freely redistributed under
+_________________)       the terms of the GNU General Public License.
+
+
+
+
+Usage:
+------------------------------------------------------------------------------
+% ./simple_cloud_scan.py -h 
+usage: simple_cloud_scan.py [-h] [--verbose] [--profile PROFILE]
+                            [--region REGION]
+                            {scan,show_profiles,version,test,usage}
+
+positional arguments:
+  {scan,show_profiles,version,test,usage}
+                        Action to perform
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --verbose, -v         Use -vv for detailed results.
+  --profile PROFILE     Non-default AWS profile to be used.
+  --region REGION       Non-default AWS region to be used.
+
+
+Example usage:
+------------------------------------------------------------------------------
+% ./simple_cloud_scan.py scan -vv
+scs.aws.scan INFO     2018-11-03 00:00:00.000000 - Scanning AWS in region default with profile default
+scs.aws.s3   INFO     Scanning AWS S3
+scs.aws.s3   INFO     Found 2 AWS S3 buckets
+scs.aws.s3   INFO     Inspecting AWS S3 bucket 345258673479.badapp.cloudtrail
+scs.aws.s3   INFO     Inspecting AWS S3 bucket static.dbc10a65f1ce1eef.tacorala.com
+scs.aws.s3   WARNING  Bucket static.dbc10a65f1ce1eef.tacorala.com permission READ granted to world.
+scs.aws.s3   CRITICAL Bucket static.dbc10a65f1ce1eef.tacorala.com permission WRITE granted to world.
+scs.aws.cloudtrail INFO     Scanning AWS Cloudtrail.
+scs.aws.cloudtrail INFO     Current Cloudtrail key fingerprints:
+scs.aws.cloudtrail INFO     0). 100e67f2cf8da91727577ae8ffdc10ce
+scs.aws.cloudtrail INFO     1). e947f0188a1609cc182074b9a9b848f2
+scs.aws.cloudtrail INFO     Collecting data on active trails.
+scs.aws.cloudtrail INFO     Cloudtrail: Found 1 active Cloudtrail.
+scs.aws.cloudtrail INFO     Found 2 trails.
+scs.aws.cloudtrail INFO     Found 1 active trails.
+scs.aws.cloudtrail INFO     Found trail with global_trail_list == True.
+scs.aws.cloudtrail INFO     Inspecting Cloudtrail trail Default.
+scs.aws.cloudtrail INFO     Trail has been logging since 2018-10-01T21:47:05Z.
+scs.aws.cloudtrail INFO     LatestDeliveryAttemptSucceeded: 2018-11-02T23:40:44Z
+scs.aws.cloudtrail INFO     S3 bucket in use: 345258673479.badapp.cloudtrail
+scs.aws.cloudtrail WARNING  Trail: Default NotificationError accured.
+scs.aws.cloudtrail INFO     Last log added 147.564973 seconds ago.
+scs.aws.iam  INFO     Inspecting AWS IAM
+scs.aws.iam  INFO     Requesting AWS IAM credential report generation.
+scs.aws.iam  INFO     Inspecting AWS IAM Account Password Policy.
+scs.aws.iam  INFO     MinimumPasswordLength 12. ok.
+scs.aws.iam  WARNING  RequireSymbols = False.
+scs.aws.iam  WARNING  RequireNumbers = False.
+scs.aws.iam  WARNING  RequireUppercaseCharacters = False.
+scs.aws.iam  WARNING  RequireUppercaseCharacters = False.
+scs.aws.iam  WARNING  RequireLowercaseCharacters = False.
+scs.aws.iam  INFO     Inspecting AWS IAM users.
+scs.aws.iam  INFO     Found 2 users.
+scs.aws.iam  INFO     Inspecting AWS IAM user auditor.
+scs.aws.iam  ERROR    No MFA device found for user auditor.
+scs.aws.iam  INFO     Found 4 attached_user_policies for user auditor.
+scs.aws.iam  INFO     Policy AWSCodeCommitPowerUser is attached to User auditor.
+scs.aws.iam  INFO     Policy auditor-policy-payne is attached to User auditor.
+scs.aws.iam  INFO     Policy AWSCloudTrailReadOnlyAccess is attached to User auditor.
+scs.aws.iam  INFO     Policy auditor-policy-scout2 is attached to User auditor.
+scs.aws.iam  INFO     Inspecting AWS IAM user developer.
+scs.aws.iam  ERROR    No MFA device found for user developer.
+scs.aws.iam  INFO     Found 3 attached_user_policies for user developer.
+scs.aws.iam  INFO     Policy AWSCodeCommitPowerUser is attached to User developer.
+scs.aws.iam  WARNING  High Privilege Policy AdministratorAccess is attached to user developer.
+scs.aws.iam  INFO     Policy AWSCloudTrailReadOnlyAccess is attached to User developer.
+scs.aws.iam  INFO     Trying to fetch AWS IAM credential report.
+scs.aws.iam  INFO     AWS IAM Credential report: 
+user            arn                                       user_creation_time         password_enabled    password_last_used    password_last_changed      password_next_rotation    mfa_active
+--------------  ----------------------------------------  -------------------------  ------------------  --------------------  -------------------------  ------------------------  ------------
+<root_account>  arn:aws:iam::345258673479:root            2018-09-14T22:45:34+00:00  not_supported       no_information        not_supported              not_supported             false
+auditor         arn:aws:iam::345258673479:user/auditor    2018-10-01T21:52:38+00:00  true                no_information        2018-10-01T21:52:39+00:00  N/A                       false
+developer       arn:aws:iam::345258673479:user/developer  2018-10-01T21:52:38+00:00  true                no_information        2018-10-01T21:52:40+00:00  N/A                       false
+
+
+
+Design:
+------------------------------------------------------------------------------
+SCS makes use of python3 and boto3.
+As a workaround for having limited AWS permissions during the audit we avoid
+using api calls with elevated permissions as:
+get-account-summary, get-account-authorization-details, ...
+
+
+
+Limitations:
+------------------------------------------------------------------------------
+SCS could be called "Field research on the origin of limitations" :)
+(Un)fortunately AWS is quite massive - Only small parts of very few services
+of the AWS cloud offering are covered.
+
+So far: IAM, S3, Cloudtrail
+
+
+
+Todo:
+------------------------------------------------------------------------------
+Add support for google cloud :)
+Add support for about 120 other AWS services
+Add support for scanning all_region in one scan
+Parallelize scanning
+Add more comments
+Extensive testing & write tests
+
+
+Known issues:
+------------------------------------------------------------------------------
+-vvvv makes results in non_verboseness
+
